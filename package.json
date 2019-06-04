@@ -1,0 +1,27 @@
+{
+  "name": "react-chess",
+  "version": "1.0.0",
+  "description": "Grab React from the CDN ``` mkdir lib cd lib curl -o react.min.js https://unpkg.com/react@16/umd/react.production.min.js curl -o react-dom.min.js https://unpkg.com/react-dom@16/umd/react-dom.production.min.js ```",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/cli": "^7.4.4",
+    "@babel/core": "^7.4.5",
+    "@babel/preset-react": "^7.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel src -d lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/101arg101/react-chess.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/101arg101/react-chess/issues"
+  },
+  "homepage": "https://github.com/101arg101/react-chess#readme"
+}
