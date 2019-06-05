@@ -61,9 +61,21 @@ class Game extends React.Component {
                 )
               } else {
                 if (this.state.moving) {
-                  return (
-                    <Cell piece={piece} color={color} key={x} />
-                  )
+                  let check = this.state.possibleMoves.map((coords) => {
+                    if (coords.y === y && coords.x === x) {
+                      return true
+                    }
+                  })
+                  
+                  if (check.indexOf(true) >= 0) { 
+                    return (
+                      <Moveable game={this} piece={piece} moving={this.state.board[this.state.moving.y][this.state.moving.x]} key={x} keys={{y:y, x:x}} />
+                    )
+                  } else {
+                    return (
+                      <Cell piece={piece} color={color} key={x} />
+                    )
+                  }
                 } else {
                   return (
                     <Cell piece={piece} color={color} key={x} />
@@ -113,7 +125,6 @@ class Piece extends React.Component {
       gameState.possibleMoves = []
     }
     this.state.game.setState(gameState)
-    console.log(this.state)
   }
   
   render() {
@@ -142,22 +153,31 @@ class Pawn extends Piece {
         board = this.state.game.state.board,
         d = this.state.player === 'white' ? -1 : 1
         
-    if (board[y+d][x-1] !== null && board[y+d][x-1].state.player !== this.state.player) {
+    if (board[y+d] !== undefined &&
+        board[y+d][x-1] !== undefined &&
+        board[y+d][x-1] !== null &&
+        board[y+d][x-1].state.player !== this.state.player) {
       // attack left corner
       moves.push({y:y+d, x:x-1})
     }
-    if (board[y+d][x+1] !== null && board[y+d][x+1].state.player !== this.state.player) {
+    if (board[y+d] !== undefined &&
+        board[y+d][x+1] !== undefined &&
+        board[y+d][x+1] !== null &&
+        board[y+d][x+1].state.player !== this.state.player) {
       // attack right corner
       moves.push({y:y+d, x:x+1})
     }
-    if (board[y+d][x] === null) {
+    if (board[y+d] !== undefined &&
+        board[y+d][x] === null) {
       // move forward
       moves.push({y:y+d, x:x})
     }
-    if (board[y+d+d][x] === null && (y-d-d)%8 === 0) {
+    if (board[y+d+d] !== undefined &&
+        board[y+d+d][x] === null &&
+        (y-d)%7 === 0) {
       // move forward 2 spaces if in starting position and 2 spaces away is empty
       moves.push({y:y+d+d, x:x})
-    }
+    } 
   
     return moves
   }
@@ -228,6 +248,33 @@ class King extends Piece {
   }
 }
 
+class Moveable extends React.Component {
+  constructor(props) {
+    super(props)
+    
+    this.state = {
+      game: props.game,
+      piece: props.piece,
+      moving: props.moving,
+      keys: props.keys
+    }
+    
+    this.handleClick = this.handleClick.bind(this)
+  }
+  
+  handleClick(event) {
+    let gameState = this.state.game.state
+    
+    this.state.game.setState(gameState)
+  }
+  
+  render() {
+    return (
+      <Cell piece={this.state.piece} color="green" key={this.state.keys.x} onClick={this.handleClick} />
+    )
+  }
+}
+
 function Cell(props) {
   if (props.piece !== null) {
     return (
@@ -238,15 +285,15 @@ function Cell(props) {
   } else {
     return (
       <div className={"col-1 " + props.color}>
-        <TransparentImg />
+        <TransparentImg className={props.color === 'green' ? 'clickable': ''} />
       </div>
     )
   }
 }
 
-function TransparentImg() {
+function TransparentImg(props) {
   return (
-    <img className="push-15 img-fluid" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAaElEQVR42u3PQREAAAwCoNm/9CL496ABuREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREWkezG8AZQ6nfncAAAAASUVORK5CYII=" />
+    <img className={"push-15 img-fluid " + props.className} src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAaElEQVR42u3PQREAAAwCoNm/9CL496ABuREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREWkezG8AZQ6nfncAAAAASUVORK5CYII=" />
   )
 }
 
