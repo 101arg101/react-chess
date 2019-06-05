@@ -10,3 +10,11 @@
   margin-top: 15px;
   margin-bottom: 15px;
 }
+
+.clickable {
+  cursor: pointer;
+}
+
+.green {
+  background-color: #2e692e;
+}
