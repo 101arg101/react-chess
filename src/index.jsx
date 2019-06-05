@@ -92,7 +92,6 @@ class Piece extends React.Component {
   }
   
   handleClick(event) {
-    console.log(this.state)
     this.state.moving = !this.state.moving
     let gameState = this.state.game.state
     
@@ -102,6 +101,7 @@ class Piece extends React.Component {
           if (piece !== null && piece.state.moving) {
             if (piece === this) { // gameState.board[gameState.moving.y][gameState.moving.x])
               gameState.moving = {y:y, x:x}
+              gameState.possibleMoves = this.calculateMoves(y, x)
             } else { // this isn't the piece being moved, but was previously selected
               piece.state.moving = false
             }
@@ -110,6 +110,7 @@ class Piece extends React.Component {
       })
     } else { // if the piece isn't being moved
       gameState.moving = false // tell the board it's not having a piece being moved
+      gameState.possibleMoves = []
     }
     this.state.game.setState(gameState)
     console.log(this.state)
@@ -134,6 +135,31 @@ class Pawn extends Piece {
       moving: false,
       game: props.game
     }
+  }
+  
+  calculateMoves(y, x) {
+    let moves = [],
+        board = this.state.game.state.board,
+        d = this.state.player === 'white' ? -1 : 1
+        
+    if (board[y+d][x-1] !== null && board[y+d][x-1].state.player !== this.state.player) {
+      // attack left corner
+      moves.push({y:y+d, x:x-1})
+    }
+    if (board[y+d][x+1] !== null && board[y+d][x+1].state.player !== this.state.player) {
+      // attack right corner
+      moves.push({y:y+d, x:x+1})
+    }
+    if (board[y+d][x] === null) {
+      // move forward
+      moves.push({y:y+d, x:x})
+    }
+    if (board[y+d+d][x] === null && (y-d-d)%8 === 0) {
+      // move forward 2 spaces if in starting position and 2 spaces away is empty
+      moves.push({y:y+d+d, x:x})
+    }
+  
+    return moves
   }
 }
 

@@ -6,6 +6,10 @@
   background-color: #716558;
 }
 
+.green {
+  background-color: #2e692e;
+}
+
 .push-15 {
   margin-top: 15px;
   margin-bottom: 15px;
@@ -13,8 +17,4 @@
 
 .clickable {
   cursor: pointer;
-}
-
-.green {
-  background-color: #2e692e;
 }
