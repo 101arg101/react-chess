@@ -14,12 +14,12 @@ class Game extends React.Component {
           {type: 'knight', player: 'black'},
           {type: 'rook', player: 'black'}
         ],
-        new Array(8).fill({type: 'pawn', player: 'black'}, 0, 8),
-        new Array(8).fill(null, 0, 8),
-        new Array(8).fill(null, 0, 8),
-        new Array(8).fill(null, 0, 8),
-        new Array(8).fill(null, 0, 8),
-        new Array(8).fill({type: 'pawn', player: 'white'}, 0, 8),
+        new Array(8).fill({type: 'pawn', player: 'black'}),
+        new Array(8).fill(null),
+        new Array(8).fill(null),
+        new Array(8).fill(null),
+        new Array(8).fill(null),
+        new Array(8).fill({type: 'pawn', player: 'white'}),
         [
           {type: 'rook', player: 'white'},
           {type: 'knight', player: 'white'},
@@ -49,9 +49,7 @@ class Game extends React.Component {
     
     return (
       <div className="container">
-        <>
         {rows}
-        </>
       </div>
     )
   }
