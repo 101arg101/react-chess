@@ -39,7 +39,8 @@ class Game extends React.Component {
         ]
       ],
       moving: false,
-      possibleMoves: []
+      possibleMoves: [],
+      turn: 'white'
     }
   }
   
@@ -50,37 +51,26 @@ class Game extends React.Component {
           <div className="col-2"></div>
             {row.map((piece, x) => {
               let color = (y%2 + x%2)%2 === 0 ? 'black' : 'white'
-              if (piece !== null) {
-                return (
-                  <Cell piece={piece} color={
-                    (piece.state.moving) ? (
-                      'green'
-                    ) : (
-                      color
-                  )} key={x} />
-                )
-              } else {
-                if (this.state.moving) {
-                  let check = this.state.possibleMoves.map((coords) => {
-                    if (coords.y === y && coords.x === x) {
-                      return true
-                    }
-                  })
-                  
-                  if (check.indexOf(true) >= 0) { 
-                    return (
-                      <Moveable game={this} piece={piece} moving={this.state.board[this.state.moving.y][this.state.moving.x]} key={x} keys={{y:y, x:x}} />
-                    )
-                  } else {
-                    return (
-                      <Cell piece={piece} color={color} key={x} />
-                    )
+              if (this.state.moving) { // if the game is moving a piece
+                let check = this.state.possibleMoves.map((coords) => { // check if this cell is an acceptable target to move the piece
+                  if (coords.y === y && coords.x === x) {
+                    return true
                   }
+                })
+                
+                if (check.indexOf(true) >= 0) {
+                  return (
+                    <Moveable game={this} piece={piece} moving={this.state.board[this.state.moving.y][this.state.moving.x]} key={x} coords={{y:y, x:x}} />
+                  )
                 } else {
                   return (
-                    <Cell piece={piece} color={color} key={x} />
+                    <Cell piece={piece} color={(piece !== null && piece.state.moving) ? 'green' : color} key={x} />
                   )
                 }
+              } else {
+                return (
+                  <Cell piece={piece} color={(piece !== null && piece.state.moving) ? 'green' : color} key={x} />
+                )
               }
             })}
           <div className="col-2"></div>
@@ -104,33 +94,35 @@ class Piece extends React.Component {
   }
   
   handleClick(event) {
-    this.state.moving = !this.state.moving
-    let gameState = this.state.game.state
-    
-    if (this.state.moving) { // if this piece is being moved, set game.state.moving to be coords of moving piece and set game.state.possibleMoves to be an array of coords
-      gameState.board.map((row, y) => { // get moving coords
-        row.map((piece, x) => {
-          if (piece !== null && piece.state.moving) {
-            if (piece === this) { // gameState.board[gameState.moving.y][gameState.moving.x])
-              gameState.moving = {y:y, x:x}
-              gameState.possibleMoves = this.calculateMoves(y, x)
-            } else { // this isn't the piece being moved, but was previously selected
-              piece.state.moving = false
+    if (this.state.player === this.state.game.state.turn) {
+      this.state.moving = !this.state.moving
+      let gameState = this.state.game.state
+      
+      if (this.state.moving) { // if this piece is being moved, set game.state.moving to be coords of moving piece and set game.state.possibleMoves to be an array of coords
+        gameState.board.map((row, y) => { // get moving coords
+          row.map((piece, x) => {
+            if (piece !== null && piece.state.moving) {
+              if (piece === this) { // gameState.board[gameState.moving.y][gameState.moving.x])
+                gameState.moving = {y:y, x:x}
+                gameState.possibleMoves = this.calculateMoves(y, x)
+              } else { // this isn't the piece being moved, but was previously selected
+                piece.state.moving = false
+              }
             }
-          }
+          })
         })
-      })
-    } else { // if the piece isn't being moved
-      gameState.moving = false // tell the board it's not having a piece being moved
-      gameState.possibleMoves = []
+      } else { // if the piece isn't being moved
+        gameState.moving = false // tell the board it's not having a piece being moved
+        gameState.possibleMoves = []
+      }
+      this.state.game.setState(gameState)
     }
-    this.state.game.setState(gameState)
   }
   
   render() {
     return (
       <span className={'player-' + this.state.player}>
-        <img className="push-15 img-fluid clickable" src={'/img/icons8-' + this.state.type + (this.state.player === 'black' ? '-filled' : '') + '-100.png'} onClick={this.handleClick} />
+        <img className={'push-15 img-fluid' + (this.state.player === this.state.game.state.turn ? ' clickable' : '')} src={'/img/icons8-' + this.state.type + (this.state.player === 'black' ? '-filled' : '') + '-100.png'} onClick={this.handleClick} />
       </span>
     )
   }
@@ -152,7 +144,7 @@ class Pawn extends Piece {
     let moves = [],
         board = this.state.game.state.board,
         d = this.state.player === 'white' ? -1 : 1
-        
+    
     if (board[y+d] !== undefined &&
         board[y+d][x-1] !== undefined &&
         board[y+d][x-1] !== null &&
@@ -174,10 +166,10 @@ class Pawn extends Piece {
     }
     if (board[y+d+d] !== undefined &&
         board[y+d+d][x] === null &&
-        (y-d)%7 === 0) {
-      // move forward 2 spaces if in starting position and 2 spaces away is empty
+        (y-d)%(board.length - 1) === 0) {
+      // move forward 2 spaces if in "starting position" and 2 spaces away is empty
       moves.push({y:y+d+d, x:x})
-    } 
+    }
   
     return moves
   }
@@ -256,44 +248,55 @@ class Moveable extends React.Component {
       game: props.game,
       piece: props.piece,
       moving: props.moving,
-      keys: props.keys
+      coords: props.coords
     }
     
     this.handleClick = this.handleClick.bind(this)
   }
   
   handleClick(event) {
-    let gameState = this.state.game.state
+    let gameState = this.state.game.state,
+        movedPieceState = this.state.moving.state
     
+    gameState.board = gameState.board.map((row, y) => {
+      return row.map((piece, x) => {
+        if (gameState.moving.x === x && gameState.moving.y === y) {
+          // remove previous piece
+          return null
+        } else if (this.state.coords.y === y && this.state.coords.x === x) {
+          // place piece in new spot
+          return this.state.moving
+        } else {
+          // don't touch other pieces
+          return piece
+        }
+      })
+    })
+    gameState.turn = gameState.turn === 'white' ? 'black' : 'white'
+    gameState.moving = false
+    movedPieceState.moving = false
+    this.state.moving.setState(movedPieceState)
     this.state.game.setState(gameState)
   }
   
   render() {
     return (
-      <Cell piece={this.state.piece} color="green" key={this.state.keys.x} onClick={this.handleClick} />
+      <Cell piece={this.state.piece} color="green" key={this.state.coords.x} onClick={this.handleClick} />
     )
   }
 }
 
 function Cell(props) {
-  if (props.piece !== null) {
-    return (
-      <div className={"col-1 " + props.color}>
-        {props.piece.render()}
-      </div>
-    )
-  } else {
-    return (
-      <div className={"col-1 " + props.color}>
-        <TransparentImg className={props.color === 'green' ? 'clickable': ''} />
-      </div>
-    )
-  }
+  return (
+    <div className={"col-1 " + props.color + (props.color === 'green' ? ' clickable': '')} onClick={props.onClick}>
+      {props.piece !== null ? props.piece.render() : TransparentImg()}
+    </div>
+  )
 }
 
 function TransparentImg(props) {
   return (
-    <img className={"push-15 img-fluid " + props.className} src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAaElEQVR42u3PQREAAAwCoNm/9CL496ABuREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREWkezG8AZQ6nfncAAAAASUVORK5CYII=" />
+    <img className={"push-15 img-fluid"} src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAaElEQVR42u3PQREAAAwCoNm/9CL496ABuREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREWkezG8AZQ6nfncAAAAASUVORK5CYII=" />
   )
 }
 
