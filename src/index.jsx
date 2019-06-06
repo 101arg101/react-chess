@@ -140,33 +140,37 @@ class Pawn extends Piece {
     }
   }
   
-  calculateMoves(y, x) {
+  calculateMoves(y, x, notKing = true) {
     let moves = [],
         board = this.state.game.state.board,
         d = this.state.player === 'white' ? -1 : 1
     
     if (board[y+d] !== undefined &&
         board[y+d][x-1] !== undefined &&
-        board[y+d][x-1] !== null &&
-        board[y+d][x-1].state.player !== this.state.player) {
+        (board[y+d][x-1] !== null &&
+        board[y+d][x-1].state.player !== this.state.player) ||
+        !notKing) {
       // attack left corner
       moves.push({y:y+d, x:x-1})
     }
     if (board[y+d] !== undefined &&
         board[y+d][x+1] !== undefined &&
-        board[y+d][x+1] !== null &&
-        board[y+d][x+1].state.player !== this.state.player) {
+        (board[y+d][x+1] !== null &&
+        board[y+d][x+1].state.player !== this.state.player) ||
+        !notKing) {
       // attack right corner
       moves.push({y:y+d, x:x+1})
     }
     if (board[y+d] !== undefined &&
-        board[y+d][x] === null) {
+        board[y+d][x] === null &&
+        notKing) {
       // move forward
       moves.push({y:y+d, x:x})
     }
     if (board[y+d+d] !== undefined &&
         board[y+d+d][x] === null &&
-        (y-d)%(board.length - 1) === 0) {
+        (y-d)%(board.length - 1) === 0 &&
+        notKing) {
       // move forward 2 spaces if in "starting position" and 2 spaces away is empty
       moves.push({y:y+d+d, x:x})
     }
@@ -186,6 +190,13 @@ class Rook extends Piece {
       game: props.game
     }
   }
+  
+  calculateMoves(y, x) {
+    let moves = [],
+        board = this.state.game.state.board
+    
+    return moves
+  }
 }
 
 class Knight extends Piece {
@@ -198,6 +209,13 @@ class Knight extends Piece {
       moving: false,
       game: props.game
     }
+  }
+  
+  calculateMoves(y, x) {
+    let moves = [],
+        board = this.state.game.state.board
+    
+    return moves
   }
 }
 
@@ -212,6 +230,13 @@ class Bishop extends Piece {
       game: props.game
     }
   }
+  
+  calculateMoves(y, x) {
+    let moves = [],
+        board = this.state.game.state.board
+    
+    return moves
+  }
 }
 
 class Queen extends Piece {
@@ -225,6 +250,13 @@ class Queen extends Piece {
       game: props.game
     }
   }
+  
+  calculateMoves(y, x) {
+    let moves = [],
+        board = this.state.game.state.board
+    
+    return moves
+  }
 }
 
 class King extends Piece {
@@ -237,6 +269,47 @@ class King extends Piece {
       moving: false,
       game: props.game
     }
+  }
+  
+  calculateMoves(y, x, recurse = true) {
+    let moves = [],
+        board = this.state.game.state.board,
+        enemyMoves
+    
+    moves.push({y:y-1, x:x-1})
+    moves.push({y:y-1, x:x})
+    moves.push({y:y-1, x:x+1})
+    moves.push({y:y, x:x-1})
+    moves.push({y:y, x:x+1})
+    moves.push({y:y+1, x:x-1})
+    moves.push({y:y+1, x:x})
+    moves.push({y:y+1, x:x+1})
+    
+    moves = moves.filter((item) => {
+      if (item.y >= 0 &&
+          item.y < board.length &&
+          item.x >= 0 &&
+          item.x < board[item.y].length) {
+        return item
+      }
+    })
+    
+    board.map((row, yy) => {
+      row.map((piece, xx) => {
+        if (piece !== null && piece.state.player !== this.state.player && recurse) {
+          enemyMoves = flattenMoves(piece.calculateMoves(yy, xx, false)) // notice that you can add arguments to functions without having them declared in the function
+          moves = moves.filter((item) => {
+            return enemyMoves.indexOf((item.y<<3) + item.x) === -1
+          })
+        }
+      })
+    })
+    
+    moves = moves.filter((item) => {
+      return !(board[item.y][item.x] !== null && board[item.y][item.x].state.player === this.state.player) // why do we have to inverse? try switching the order of the statements
+    })
+    
+    return moves
   }
 }
 
@@ -255,8 +328,7 @@ class Moveable extends React.Component {
   }
   
   handleClick(event) {
-    let gameState = this.state.game.state,
-        movedPieceState = this.state.moving.state
+    let gameState = this.state.game.state
     
     gameState.board = gameState.board.map((row, y) => {
       return row.map((piece, x) => {
@@ -274,8 +346,7 @@ class Moveable extends React.Component {
     })
     gameState.turn = gameState.turn === 'white' ? 'black' : 'white'
     gameState.moving = false
-    movedPieceState.moving = false
-    this.state.moving.setState(movedPieceState)
+    this.state.moving.state.moving = false
     this.state.game.setState(gameState)
   }
   
@@ -298,6 +369,12 @@ function TransparentImg(props) {
   return (
     <img className={"push-15 img-fluid"} src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAaElEQVR42u3PQREAAAwCoNm/9CL496ABuREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREWkezG8AZQ6nfncAAAAASUVORK5CYII=" />
   )
+}
+
+function flattenMoves(moves) {
+  return moves.map((item) => {
+    return (item.y<<3) + item.x // this number 3 is dependent on the board size
+  })
 }
 
 ReactDOM.render(
